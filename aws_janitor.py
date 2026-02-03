@@ -10,7 +10,7 @@ N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/aws-finops-alert"
 
 
 #Configurações
-# Calculation of loose EBS disks
+# Cálculo de discos EBS soltos
 def get_unused_ebs_costs(region):
     ec2 = boto3.resource('ec2', region_name=region)
     unused_volumes = []
@@ -104,7 +104,7 @@ def clean_aws(data: dict, background_tasks: BackgroundTasks):
     if not resource_list or (not resource_list.get('volumes') and not resource_list.get('ips')):
         return {"message": "Nenhum recurso para limpar", "status": "aviso"}
     
-    # Rodamos em background para o n8n não ficar esperando o tempo da AWS
+    # Rodar em background para o n8n não ficar esperando o tempo da AWS
     background_tasks.add_task(delete_resources, resource_list, REGION)
     return {"message": "Limpeza iniciada em background", "recursos": resource_list}
 
