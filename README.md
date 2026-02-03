@@ -43,7 +43,7 @@ uvicorn aws_janitor:app --reload
 Importe o arquivo .json do workflow (disponível na pasta /n8n) e configure o Webhook para apontar para o endpoint /scan do microsserviço.
 
 🔮 Roadmap (O que vem por aí)
-O projeto está em constante evolução. Os próximos passos planejados são:
+Os próximos passos planejados são:
 
 [ ] Persistência com PostgreSQL: Implementar uma camada de dados para registrar o histórico de economias e trilha de auditoria.
 
@@ -51,7 +51,6 @@ O projeto está em constante evolução. Os próximos passos planejados são:
 
 [ ] Observabilidade com Datadog: Dashboard em tempo real mostrando métricas de "Custo Evitado" (Cost Avoidance).
 
-[ ] Multi-região: Suporte para scan em todas as regiões da AWS simultaneamente.
 
 👨‍💻 Autor
 Lorenzo Michelotti
@@ -62,9 +61,3 @@ Estagiário de Infraestrutura e Desenvolvimento no LAMIC.
 
 GitHub: lzMichelotti
 
-💡 Dica para o seu GitHub:
-Crie a pasta /n8n no seu repositório e coloque lá o arquivo JSON do seu workflow (Vá no n8n -> Três pontinhos no canto superior direito -> Download).
-
-Crie a pasta /terraform e coloque seus arquivos .tf.
-
-Adicione um GIF ou um print do card chegando no seu Discord. Isso chama muita atenção!
