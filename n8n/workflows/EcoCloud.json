@@ -1,0 +1,183 @@
+{
+  "name": "EcoCloud",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aws-finops-alert",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "713ee621-fafb-4a64-b5b9-6aa05c9660d1",
+      "name": "Webhook",
+      "webhookId": "a9b2f4a8-7049-4636-8098-16065ccdf2c9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ff3d8ae5-eab2-46bf-aaf1-74979c1f6573",
+              "leftValue": "={{ $json.body.total_economia }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "ffc477b0-807b-4555-8f7e-a7141e68a187",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1467932350322311433",
+          "mode": "id"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1467932353132499129",
+          "mode": "id"
+        },
+        "content": "⚠️ Novo alerta de recursos ociosos detectado!",
+        "options": {},
+        "embeds": {
+          "values": [
+            {
+              "description": "=📍 **Região:** {{ $('Webhook').item.json.body.region }}\n💰 **Economia:** $ {{ $json.body.total_economia.toFixed(2) }} /mês\n📦 **Volumes EBS:** {{ $json.body.volumes.length }} unidade(s)\n🌐 **IPs Elásticos:** {{ $json.body.ips.length }} unidade(s)\n\n---\n⚠️ **Ação Necessária:**\nPara autorizar a limpeza automática desses recursos, clique no link abaixo:\n🔗 {{ $execution.resumeUrl }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -240
+      ],
+      "id": "9ed66af2-107f-4d80-9a94-bc97ab5b9a0e",
+      "name": "Discord",
+      "webhookId": "c28043e1-3ce6-4771-bcdd-0347f95ad260",
+      "credentials": {
+        "discordBotApi": {
+          "id": "8Fu1Ks4lQrZFqyIP",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/clean",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Webhook').item.json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        -60
+      ],
+      "id": "4940e1c3-46e6-478b-bd4d-5eb0d0cc94a1",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        -60
+      ],
+      "id": "60b313f6-8efb-40e9-9d81-beeb62a98734",
+      "name": "Wait",
+      "webhookId": "170050ed-e312-40bc-83fd-94bb65a5237d"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord": {
+      "main": [
+        []
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6ddb85a9-abf0-4564-a809-d3806ae2ca2c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "35cdf2949674272002ad3006972014bf09f46f9640fa3b58de455249ef7847c9"
+  },
+  "id": "q0QYgEyiqdgLQJA0",
+  "tags": []
+}

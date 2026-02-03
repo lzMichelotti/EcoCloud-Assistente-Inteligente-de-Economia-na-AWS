@@ -10,11 +10,14 @@ services:
       - "5678:5678"
     volumes:
       - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/files
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=admin
       - N8N_BASIC_AUTH_PASSWORD=123456
       - TZ=America/Sao_Paulo
+      - N8N_IMPORT_PATH=/files
+      - N8N_IMPORT_WAIT_TIME=10000
 
 volumes:
   n8n_data:
