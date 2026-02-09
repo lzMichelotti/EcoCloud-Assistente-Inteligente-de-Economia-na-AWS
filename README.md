@@ -45,7 +45,7 @@ Importe o arquivo .json do workflow (disponível na pasta /n8n) e configure o We
 🔮 Roadmap (O que vem por aí)
 Os próximos passos planejados são:
 
-[ ] Persistência com PostgreSQL: Implementar uma camada de dados para registrar o histórico de economias e trilha de auditoria.
+[ X ] PostgreSQL: Implementar uma camada de dados para registrar o histórico de economias.
 
 [ ] Agente de IA (Gemini): Integrar análise de causa raiz para explicar por que os recursos foram esquecidos antes da deleção.
 
