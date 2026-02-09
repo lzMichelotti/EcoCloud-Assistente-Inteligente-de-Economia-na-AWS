@@ -1,6 +1,8 @@
 from fastapi import FastAPI, BackgroundTasks
 import boto3
 import requests
+import google.generativeai as genai
+from database import SessionLocal, HistoricoLimpeza
 
 app = FastAPI()
 
@@ -56,6 +58,12 @@ def delete_resources(resorce_list, region):
             print(f"Limpando Volume: {volume_id}")
             ec2_client.delete_volume(VolumeId=volume_id)
             print(f"Volume {volume_id} deletado com sucesso.")
+            registrar_limpeza_banco(
+                recurso_id=volume_id,
+                tipo="EBS",
+                valor=vol['cost_est'],
+                regiao=region
+            )
         except Exception as e:
             print(f"Erro ao deletar volume {volume_id}: {e}")
 
@@ -66,6 +74,12 @@ def delete_resources(resorce_list, region):
             print(f"Liberando IP: {alloc_id}")
             ec2_client.release_address(AllocationId=alloc_id)
             print(f"Endereço IP com alocação {alloc_id} liberado com sucesso.")
+            registrar_limpeza_banco(
+                recurso_id=alloc_id,
+                tipo="EIP",
+                valor=ip['cost_est'],
+                regiao=region
+            )
         except Exception as e:
             print(f"Erro ao liberar endereço IP com alocação {alloc_id}: {e}")
 
@@ -86,9 +100,56 @@ def scan_resources(region):
     except Exception as e:
         raise Exception(f"Erro ao scanear recursos: {str(e)}")
 
+#Configuração Google AI
+genai.configure(api_key="AIzaSyDoS-_vKZPdIUVDazy0j1gqZ1PB0YdOI8I")
+model = genai.GenerativeModel("gemini-1.5-flash")
+
+def gerar_analise_ia(recursos):
+    """Gera análise IA dos recursos ociosos usando Google Gemini"""
+    prompt = f"""
+    Como um especialista em FinOps, analise estes recursos ociosos da AWS:
+    {recursos}
+    
+    Escreva uma frase curta e técnica para um time de SRE no Discord, 
+    justificando por que deletar esses itens é importante e qual o impacto no budget.
+    Seja direto e use emojis.
+    """
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"Erro ao gerar análise IA: {str(e)}"
+    
+def registrar_limpeza_banco(recurso_id, tipo, valor, regiao):
+    """Função para gravar log no PostgreSQL"""
+    db = SessionLocal()
+    try:
+        novo_registro = HistoricoLimpeza(
+            tipo=tipo,
+            recurso_id=recurso_id,
+            regiao=regiao,
+            valor_economizado=valor
+        )
+        db.add(novo_registro)
+        db.commit()
+        print(f"Registro de limpeza salvo:{recurso_id}")
+    except Exception as e:
+        print(f"Erro ao salvar registro de limpeza: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
 @app.get("/scan")
 def scan_aws():
     dados_aws = scan_resources(REGION)
+    
+    # Gerar análise IA dos recursos encontrados
+    if dados_aws['volumes'] or dados_aws['ips']:
+        try:
+            dados_aws['analise_ia'] = gerar_analise_ia(dados_aws)
+        except Exception as e:
+            print(f"⚠️ Falha no Gemini: {e}")
+            dados_aws['analise_ia'] = "⚠️ Análise da IA indisponível. Recomenda-se revisão manual."
     
     try:
         response = requests.post(N8N_WEBHOOK_URL, json=dados_aws)
@@ -107,6 +168,8 @@ def clean_aws(data: dict, background_tasks: BackgroundTasks):
     # Rodar em background para o n8n não ficar esperando o tempo da AWS
     background_tasks.add_task(delete_resources, resource_list, REGION)
     return {"message": "Limpeza iniciada em background", "recursos": resource_list}
+
+
 
 
 
