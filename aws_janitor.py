@@ -3,12 +3,16 @@ import boto3
 import requests
 import google.generativeai as genai
 from database import SessionLocal, HistoricoLimpeza
+import os
+from dotenv import load_dotenv
 
 app = FastAPI()
 
-#Alternar a região para a que costuma usar (ex: 'us-west-2' ou 'us-east-1')
-REGION = 'us-east-1'
-N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/aws-finops-alert"
+# Carrega variáveis de ambiente
+load_dotenv()
+REGION = os.getenv('REGION', 'us-east-1')
+N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_URL')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 
 #Configurações
@@ -100,9 +104,9 @@ def scan_resources(region):
     except Exception as e:
         raise Exception(f"Erro ao scanear recursos: {str(e)}")
 
-#Configuração Google AI
-genai.configure(api_key="AIzaSyDoS-_vKZPdIUVDazy0j1gqZ1PB0YdOI8I")
-model = genai.GenerativeModel("gemini-1.5-flash")
+# Configuração Google AI
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-2.0-flash')
 
 def gerar_analise_ia(recursos):
     """Gera análise IA dos recursos ociosos usando Google Gemini"""
