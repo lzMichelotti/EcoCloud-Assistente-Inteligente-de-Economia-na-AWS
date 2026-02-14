@@ -63,7 +63,7 @@
           "value": "1467932353132499129",
           "mode": "id"
         },
-        "content": "⚠️ Novo alerta de recursos ociosos detectado!",
+        "content": "=⚠️ Novo alerta de recursos ociosos detectado!\n {{ $('Webhook').item.json.body.analise_ia }}",
         "options": {},
         "embeds": {
           "values": [
@@ -173,7 +173,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "6ddb85a9-abf0-4564-a809-d3806ae2ca2c",
+  "versionId": "edb77ae6-8b01-4ebc-bd8d-a051d74c3107",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "35cdf2949674272002ad3006972014bf09f46f9640fa3b58de455249ef7847c9"
