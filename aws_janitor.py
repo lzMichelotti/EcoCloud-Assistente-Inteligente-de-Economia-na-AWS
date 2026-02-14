@@ -5,6 +5,8 @@ import google.generativeai as genai
 from database import SessionLocal, HistoricoLimpeza
 import os
 from dotenv import load_dotenv
+import time
+from datadog import initialize, api
 
 app = FastAPI()
 
@@ -13,6 +15,12 @@ load_dotenv()
 REGION = os.getenv('REGION', 'us-east-1')
 N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_URL')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+options = {
+    'api_key': os.getenv('DD_API_KEY'),
+    'app_key': os.getenv('DD_APP_KEY'),
+    'api_host': 'https://api.datadoghq.com'
+}
+initialize(**options)
 
 
 #Configurações
@@ -68,8 +76,20 @@ def delete_resources(resorce_list, region):
                 valor=vol['cost_est'],
                 regiao=region
             )
+            
+            # 2. Envia para o Datadog
+            valor = vol.get('cost_est', 0.0)
+            tipo = vol.get('tipo', 'EBS')
+            
+            api.Metric.send(
+                metric='ecocloud.economia_real',
+                points=[(int(time.time()), valor)],
+                tags=[f"tipo:{tipo}", "env:prod", "projeto:cloudthrift"]
+            )
+            print(f"Metrica de ${valor} enviada ao Datadog!")
+            
         except Exception as e:
-            print(f"Erro ao deletar volume {volume_id}: {e}")
+            print(f"Erro ao processar limpeza: {e}")
 
     for ip in resorce_list.get('ips', []):
         alloc_id = None
@@ -84,8 +104,20 @@ def delete_resources(resorce_list, region):
                 valor=ip['cost_est'],
                 regiao=region
             )
+            
+            # 2. Envia para o Datadog
+            valor = ip.get('cost_est', 0.0)
+            tipo = ip.get('tipo', 'EIP')
+            
+            api.Metric.send(
+                metric='ecocloud.economia_real',
+                points=[(int(time.time()), valor)],
+                tags=[f"tipo:{tipo}", "env:prod", "projeto:cloudthrift"]
+            )
+            print(f"Metrica de ${valor} enviada ao Datadog!")
+            
         except Exception as e:
-            print(f"Erro ao liberar endereço IP com alocação {alloc_id}: {e}")
+            print(f"Erro ao processar limpeza: {e}")
 
 def scan_resources(region):
     """Escaneia todos os recursos não utilizados em uma região"""
@@ -106,23 +138,20 @@ def scan_resources(region):
 
 # Configuração Google AI
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 def gerar_analise_ia(recursos):
-    """Gera análise IA dos recursos ociosos usando Google Gemini"""
-    prompt = f"""
-    Como um especialista em FinOps, analise estes recursos ociosos da AWS:
-    {recursos}
+    prompt = f"""Como um especialista em FinOps, analise estes recursos ociosos da AWS: {recursos}.
+Gere um resumo técnico de até 3 frases para o Discord.
+Mencione que a economia total será de ${recursos.get('total_economia', 0)}."""
     
-    Escreva uma frase curta e técnica para um time de SRE no Discord, 
-    justificando por que deletar esses itens é importante e qual o impacto no budget.
-    Seja direto e use emojis.
-    """
     try:
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return f"Erro ao gerar análise IA: {str(e)}"
+        erro_msg = f"Erro na IA: {str(e)}"
+        print(erro_msg)
+        return erro_msg
     
 def registrar_limpeza_banco(recurso_id, tipo, valor, regiao):
     """Função para gravar log no PostgreSQL"""
@@ -152,8 +181,8 @@ def scan_aws():
         try:
             dados_aws['analise_ia'] = gerar_analise_ia(dados_aws)
         except Exception as e:
-            print(f"⚠️ Falha no Gemini: {e}")
-            dados_aws['analise_ia'] = "⚠️ Análise da IA indisponível. Recomenda-se revisão manual."
+            print(f"Falha no Gemini: {e}")
+            dados_aws['analise_ia'] = "Análise da IA indisponível. Recomenda-se revisão manual."
     
     try:
         response = requests.post(N8N_WEBHOOK_URL, json=dados_aws)
